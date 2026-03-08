@@ -81,23 +81,53 @@ void p152(void *in, void *out) {
 
 void p152hash(void *in, int inlen, void *out, int outlen){
 	unsigned char block[BLKLEN];
-	unsigned char *pout = out;
-	unsigned char *pin = in;
+	unsigned char *pout = (unsigned char*) out;
+	unsigned char *pin = (unsigned char*) in; //the message m
+	
+	//initialize all blocks to be zero
+	if (inlen < 0){
+		inlen = 0;
+	}
 
-	//initialize block to all zeros
-	block[] = {0};
+	if (outlen < 0){
+		outlen = 0;
+	}
+
+	//initialize block to be all zeros
+	memset(block, 0, sizeof(block));
+
+	while (inlen > R){
+	for(int i =0; i < R; i++){
+		block[i] ^= pin[i]; //xor next R bytes into beginning of block
+	}
+	p152(block, block); //p152 block
+
+	pin+= R;
+	inlen -= R;
+	} //for loop
+	  
+	for(int i =0; i < inlen; i++){
+	block[i] ^= pin[i]; //xor any remaining bytes into beginning of block
+	}
+
+	block[inlen] ^=0x80; 
+	block[R-1] ^= 0x01;
+	p152(block, block);
+
+	while (outlen > R){
+	memcpy(pout, block, R); //output R bytes from beginning of block
+	pout += R;
+	outlen -= R;
+	p152(block, block);
+	}
+
+	if(outlen > 0){
+		memcpy(pout, block, outlen);
+	}	
 	
-	while (inlen >= R){
-		pin += R;
-		pout += R;
-	  block[pin] = ^R; //xor next R bytes into the beginning of block 
-	  p152(in, out);
-	  inlen--;
-	} //while
 	
 	
-	
-}
+}//p152hash
 
 #if 1  /* Set to 0 before submitting */
 #include <stdio.h>
@@ -118,14 +148,22 @@ int main() {
     for (int i=0; i<48; i++)
         buf[i] = (unsigned char)(i + 128);
 
-    mix((uint32_t *)buf, 0, 1, 2);
-    pbuf(buf, 12, "Mix : ");
-    p152(buf, out);
-    pbuf(out, 24, "p152: ");
-    pbuf(out+24, 24, "p152: ");
-    p152(buf, buf);
-    if (memcmp(buf, out, 48))
-        printf("p152 in-place error\n");
+    p152hash(buf, 0, out, 36);
+    pbuf(out, 36, "0 : ");
+    p152hash(buf,1,out,36);
+    pbuf(out, 36, "1 : ");
+    p152hash(buf,11,out,36);
+    pbuf(out, 36, "11: ");
+    p152hash(buf, 12, out, 36);
+    pbuf(out, 36, "12: ");
+    p152hash(buf, 23, out, 36);
+    pbuf(out, 36, "23: ");
+    p152hash(buf, 24, out, 36);
+    pbuf(out, 36, "24: ");
+    p152hash(buf, 47, out, 36);
+    pbuf(out, 36, "47: ");
+    p152hash(buf, 48, out, 36);
+    pbuf(out, 36, "48: ");
 
     return 0;
 }
