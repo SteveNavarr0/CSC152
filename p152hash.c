@@ -82,54 +82,52 @@ void p152(void *in, void *out) {
 void p152hash(void *in, int inlen, void *out, int outlen){
 	unsigned char block[BLKLEN];
 	unsigned char *pout = (unsigned char*) out;
-	unsigned char *pin = (unsigned char*) in; //the message m
-	
-	//initialize all blocks to be zero
+	unsigned char *pin = (unsigned char*) in; //the message m 
 	if (inlen < 0){
 		inlen = 0;
 	}
-
+	
 	if (outlen < 0){
 		outlen = 0;
 	}
 
-	//initialize block to be all zeros
-	memset(block, 0, sizeof(block));
+	memset(block, 0, sizeof(block)); //initialize block to be all zeros
 
-	while (inlen > R){
-	for(int i =0; i < R; i++){
+	while (inlen >= R){
+	 for (int i = 0; i < R; i++){
 		block[i] ^= pin[i]; //xor next R bytes into beginning of block
+	 }
+
+	 p152(block, block); //p152 block
+	 pin += R;
+	 inlen -= R;
+
+	} //while loop
+
+	for (int i =0; i < inlen; i++){
+	block[i] ^= pin[i];
 	}
-	p152(block, block); //p152 block
 
-	pin+= R;
-	inlen -= R;
-	} //for loop
-	  
-	for(int i =0; i < inlen; i++){
-	block[i] ^= pin[i]; //xor any remaining bytes into beginning of block
-	}
+	//xor 10*1 into the appropriate places of the block
+	block[inlen] ^= 0x80; //the first '1' bit
+	block[R-1] ^= 0x01; //the last '1' bit
 
-	block[inlen] ^=0x80; 
-	block[R-1] ^= 0x01;
-	p152(block, block);
+	p152(block, block); //final permutation after padding
 
-	while (outlen > R){
-	memcpy(pout, block, R); //output R bytes from beginning of block
+	while (outlen > R){ //squeeze output
+	memcpy(pout, block, R);
 	pout += R;
 	outlen -= R;
 	p152(block, block);
 	}
-
-	if(outlen > 0){
+	
+	if (outlen > 0){ //output any remaining bytes from beginning of block
 		memcpy(pout, block, outlen);
-	}	
-	
-	
+	}
 	
 }//p152hash
 
-#if 1  /* Set to 0 before submitting */
+#if 0  /* Set to 0 before submitting */
 #include <stdio.h>
 
 /* pbuf is used to print sequences of bytes from in memory         */
